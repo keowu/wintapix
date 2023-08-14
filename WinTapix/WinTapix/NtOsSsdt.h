@@ -43,10 +43,10 @@ typedef struct _SYSTEM_MODULE_INFORMATION {
 
 typedef NTSTATUS ( *QUERY_INFO_PROCESS ) (
 
-    __in HANDLE ProcessHandle,
-    __in PROCESSINFOCLASS ProcessInformationClass,
-    __out_bcount(ProcessInformationLength) PVOID ProcessInformation,
-    __in ULONG ProcessInformationLength,
+    _In_ HANDLE ProcessHandle,
+    _In_ PROCESSINFOCLASS ProcessInformationClass,
+    __out_bcount( ProcessInformationLength ) PVOID ProcessInformation,
+    _In_ ULONG ProcessInformationLength,
     __out_opt PULONG ReturnLength
 
 );
@@ -55,16 +55,16 @@ QUERY_INFO_PROCESS ZwQueryInformationProcess;
 
 NTSTATUS NTAPI ZwQuerySystemInformation( 
     
-    ULONG SystemInformationClass,
-    PVOID SystemInformation,
-    ULONG SystemInformationLength, 
-    PULONG ReturnLength
+    _In_ ULONG SystemInformationClass,
+    _Inout_ PVOID SystemInformation,
+    _In_ ULONG SystemInformationLength,
+    _Out_opt_ PULONG ReturnLength
 
 );
 
 PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(
     
-    IN PVOID Base
+    _In_ PVOID Base
 
 );
 
@@ -88,55 +88,55 @@ typedef struct _SSDTStruct {
 
 //Outras duas assinaturas usadas pelo malware para encontrar a KiSystemService(SSDT)
 /////////////////////////////////////////////
-static unsigned char KiSystemServiceStartCodePattern[] = { 0x8B, 0xF8, 0xC1, 0xEF, 0x07, 0x83, 0xE7, 0x20, 0x25, 0xFF, 0x0F, 0x00, 0x00 }; // Mais precisa(Para deixar o projeto estável)
+static unsigned char KiSystemServiceStartCodePattern[ ] = { 0x8B, 0xF8, 0xC1, 0xEF, 0x07, 0x83, 0xE7, 0x20, 0x25, 0xFF, 0x0F, 0x00, 0x00 }; // Mais precisa(Para deixar o projeto estável)
 
 //As demais abaixo precisam ser bsucadas entre os ranges -> ZwUnloadKey - 86016   e  ZwUnloadKey + 77824 (Faça a busca pela assinatura neste range)
 //O fator de busca é o endereço de ZwUnloadKey -> use MmGetSystemRoutineAddress ao seu favor.
-static unsigned char KiSystemServiceStartCodePatternViaZwUnloadKeyNTOSBiggerOrEqual12[] = { 0xD3, 0x41, 0x3B, 0x44, 0x3A, 0x10, 0x0F, 0x83 };
+static unsigned char KiSystemServiceStartCodePatternViaZwUnloadKeyNTOSBiggerOrEqual12[ ] = { 0xD3, 0x41, 0x3B, 0x44, 0x3A, 0x10, 0x0F, 0x83 };
 
-static unsigned char KiSystemServiceStartCodePatternViaZwUnloadKeyNTOSBelowThan12[] = { 0xD3, 0x42, 0x3B, 0x44, 0x17, 0x10, 0x0F, 0x83 };
+static unsigned char KiSystemServiceStartCodePatternViaZwUnloadKeyNTOSBelowThan12[ ] = { 0xD3, 0x42, 0x3B, 0x44, 0x17, 0x10, 0x0F, 0x83 };
 /////////////////////////////////////////////
 
 unsigned int FixRVAThings(
     
-    IMAGE_NT_HEADERS64* imgNtH,
-    unsigned int uiVirtualAddress,
-    unsigned int uiFileLowPart
+    _In_ IMAGE_NT_HEADERS64* imgNtH,
+    _In_ unsigned int uiVirtualAddress,
+    _In_ unsigned int uiFileLowPart
 
 );
 
 unsigned int ParsePeFileExport(
     
-    IMAGE_DOS_HEADER* pDosH,
-    unsigned int uiFileLowPart,
-    const char* chNameExport,
-    unsigned __int64* pImageBaseNtdll
+    _In_ IMAGE_DOS_HEADER* pDosH,
+    _In_ unsigned int uiFileLowPart,
+    _In_ const char* chNameExport,
+    _In_ unsigned __int64* pImageBaseNtdll
 
 );
 
 PVOID allocate_and_set_memory(
     
-    char bFlag,
-    SIZE_T szMemRegion
+    _In_ char bFlag,
+    _In_ SIZE_T szMemRegion
 
 );
 
 NTSTATUS OpenNtdllAndParsePE(
     
-    const char* chNameSyscall,
-    const WCHAR* wNameSyscall
+    _In_ const char* chNameSyscall,
+    _In_ const WCHAR* wNameSyscall
 
 );
 
 unsigned int FindSyscallIndexOnSsdt(
     
-    const char* nameexport
+    _In_ const char* nameexport
 
 );
 
 PVOID GetNtOsKrnl(
     
-    PULONG puImageSize
+    _Out_ PULONG puImageSize
 
 );
 
@@ -148,6 +148,6 @@ PSSDTStruct GetFunction(
 
 PVOID GetFunctionAddress(
     
-    const char* apiname
+    _In_ const char* apiname
 
 );

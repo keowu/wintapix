@@ -69,47 +69,47 @@ QUERY_INFO_PROCESS ZwQueryInformationProcess;
 
 NTSTATUS NTAPI ZwQuerySystemInformation(
     
-    ULONG SystemInformationClass,
-    PVOID SystemInformation,
-    ULONG SystemInformationLength, 
-    PULONG ReturnLength
+    _In_ ULONG SystemInformationClass,
+    _Inout_ PVOID SystemInformation,
+    _In_ ULONG SystemInformationLength,
+    _Out_opt_ PULONG ReturnLength
 
 );
 
 BOOLEAN CheckProcess64(
     
-    HANDLE hProc
+    _In_ HANDLE hProc
 
 );
 
 BOOLEAN ExecuteCheckingSecurityIdentifiers(
     
-    PEPROCESS* peProcess,
-    UNICODE_STRING* unicodePermission
+    _In_ PEPROCESS* peProcess,
+    _In_ UNICODE_STRING* unicodePermission
 
 );
 
 BOOLEAN CheckAdjustSecurityIdentifiers(
     
-    PEPROCESS* peProcess
+    _In_ PEPROCESS* peProcess
 
 );
 
 BOOLEAN CompareString(
     
-    WCHAR* stringToCompare,
-    WCHAR* StringToFind
+    _In_ WCHAR* stringToCompare,
+    _In_ WCHAR* StringToFind
 
 );
 
 size_t MoveArgumentToStackAndMoveBackToEaxRegister(
     
-    size_t p1
+    _In_ size_t p1
 
 );
 
 NTSTATUS OpenTargetProcess(
     
-    SIZE_T* pPID
+    _In_ SIZE_T* pPID
 
 );

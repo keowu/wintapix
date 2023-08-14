@@ -15,7 +15,15 @@ Copyright (c) Fluxuss Software Security, LLC
 #pragma once
 #include <ntifs.h>
 
-typedef NTSTATUS ( NTAPI* _NtWriteVirtualMemory )( HANDLE ProcessHandle, PVOID BaseAddress, PVOID Buffer, ULONG NumberOfBytesToWrite, PULONG NumberOfBytesWritten );
+typedef NTSTATUS ( NTAPI* _NtWriteVirtualMemory )( 
+    
+    _In_ HANDLE ProcessHandle,
+    _In_opt_ PVOID BaseAddress,
+    _In_ PVOID Buffer,
+    _In_ ULONG NumberOfBytesToWrite,
+    _Out_opt_ PULONG NumberOfBytesWritten
+    
+);
 
 static _NtWriteVirtualMemory NtWriteVirtualMemory = 0;
 
@@ -66,16 +74,16 @@ static _ZwCreateThreadEx ZwCreateThreadEx = 0;
 
 NTSTATUS InjectShellcodeOnUsermodeProcess(
     
-    SIZE_T szPid,
-    PVOID pNtWriteSsdt,
-    PVOID pNtWriteSsdtCreate, 
-    unsigned char* chShellcode, 
-    ULONG ulShellcode
+    _In_ SIZE_T szPid,
+    _In_ PVOID pNtWriteSsdt,
+    _In_ PVOID pNtWriteSsdtCreate,
+    _In_ unsigned char* chShellcode,
+    _In_ ULONG ulShellcode
 
 );
 
 NTSTATUS TerminateUsemodeProcess(
     
-    SIZE_T szPid
+    _In_ SIZE_T szPid
 
 );

