@@ -6,7 +6,7 @@
 
 To understand, it is recommended that a reading of my article be done and you can read it at the link below:
 
-[Click here to read and understand the project on my blog article.](https://joaovitor.gq/posts/Malware-Reverse-Engineering-Analyzing-and-Rewriting-the-WINTAPIX-Driver-and-Learning-From-It-English/)
+[Click here to read and understand the project on my blog article.](https://keowu.re/posts/Malware-Reverse-Engineering-Analyzing-and-Rewriting-the-WINTAPIX-Driver-and-Learning-From-It-English/)
 
 
 Source code running on a PoC(English video):
